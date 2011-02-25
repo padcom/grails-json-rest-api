@@ -1,14 +1,22 @@
 package org.grails.plugins.rest
 
 import grails.converters.*
+import org.codehaus.groovy.grails.commons.GrailsClassUtils
 
 class JsonRestApiController {
   def list = {
     def result = [ success: true ]
     def entity = grailsApplication.getClassForName(params.entity)
+    def api = getCustomApi(entity)
     if (entity) {
-      result.count = entity.count()
-      result.data = entity.list(params)
+      if (api?.list instanceof Closure)
+        result.data = api.list(params)
+      else
+        result.data = entity.list(params)
+      if (api?.count instanceof Closure)
+        result.count = api.count(params)
+      else
+        result.count = entity.count()
     } else {
       result.success = false
       result.message = "Entity ${params.entity} not found"
@@ -64,6 +72,10 @@ class JsonRestApiController {
       data.result.data.delete()
     }
     render text: data.result as JSON, contentType: 'application/json', status: data.status
+  }
+
+  private getCustomApi(clazz) {
+    clazz.declaredFields.name.contains('api') ? clazz.api : null
   }
 
   private retrieveRecord() {
