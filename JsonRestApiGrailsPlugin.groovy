@@ -1,3 +1,6 @@
+import org.codehaus.groovy.grails.commons.GrailsClassUtils
+import org.grails.plugins.rest.JSONApiRegistry
+
 class JsonRestApiGrailsPlugin {
     // the plugin version
     def version = "1.0"
@@ -29,7 +32,12 @@ This plugin provides effortless JSON API for GORM classes
     }
 
     def doWithDynamicMethods = { ctx ->
-        // TODO Implement registering dynamic methods to classes (optional)
+        application.domainClasses.each { domainClass ->
+            def resource = domainClass.getStaticPropertyValue('expose', String)
+            if (resource) {
+                JSONApiRegistry.registry[resource] = domainClass.fullName
+            }
+        }
     }
 
     def doWithApplicationContext = { applicationContext ->
