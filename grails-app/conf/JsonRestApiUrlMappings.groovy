@@ -9,7 +9,7 @@ class JsonRestApiUrlMappings {
 		}
 
 		"/api/$domain/$id" (controller: 'jsonRestApi') {
-			entity = { normalize(params.domain) }
+			entity = { JSONApiRegistry.registry[params.domain] }
 			action = [ GET: 'show', PUT: 'update', DELETE: 'delete' ]
 		}
 	}
