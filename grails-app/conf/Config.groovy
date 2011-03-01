@@ -22,3 +22,9 @@ log4j = {
 
     warn   'org.mortbay.log'
 }
+
+//
+// This is how you change the root URL for this plugin:
+//
+// grails.'json-rest-api'.root = '/json'
+//
