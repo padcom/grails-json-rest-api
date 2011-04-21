@@ -4,3 +4,4 @@ target
 .classpath
 .project
 plugin.xml
+*.zip
