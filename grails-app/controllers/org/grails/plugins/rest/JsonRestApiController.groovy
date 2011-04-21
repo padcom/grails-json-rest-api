@@ -2,6 +2,7 @@ package org.grails.plugins.rest
 
 import grails.converters.*
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
+import org.springframework.web.servlet.support.RequestContextUtils as RCU
 
 class JsonRestApiController {
   def list = {
@@ -39,7 +40,8 @@ class JsonRestApiController {
       obj.validate()
       if (obj.hasErrors()) {
         result.status = 500
-        result.message = 'Invalid object' // TODO: define an error message that makes sense
+        result.message = extractErrors(obj).join(";")
+        result.success = false
       } else {
         result.data = obj.save(flush: true)
       }
@@ -59,7 +61,7 @@ class JsonRestApiController {
       if (data.result.data.hasErrors()) {
         data.status = 500
         data.result.data = null
-        data.result.message = 'Invalid object' // TODO: define an error message that makes sense
+        data.result.message = extractErrors(obj).join(";")
       } else {
       }
     }
@@ -99,4 +101,14 @@ class JsonRestApiController {
 
     [ result: result, status: status ]
   }
+
+  def messageSource
+
+  private extractErrors(model) {
+    def locale = RCU.getLocale(request)
+    model.errors.fieldErrors.collect { error ->
+      messageSource.getMessage(error, locale)
+    }
+  }
+
 }
