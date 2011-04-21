@@ -60,8 +60,8 @@ class JsonRestApiController {
       data.result.data.validate()
       if (data.result.data.hasErrors()) {
         data.status = 500
-        data.result.data = null
-        data.result.message = extractErrors(obj).join(";")
+        data.result.message = extractErrors(data.result.data).join(";")
+        data.result.success = false
       } else {
       }
     }

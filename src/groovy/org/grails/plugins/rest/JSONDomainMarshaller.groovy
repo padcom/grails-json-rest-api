@@ -28,14 +28,30 @@ public class JSONDomainMarshaller implements ObjectMarshaller<JSON> {
             def properties = BeanUtils.getPropertyDescriptors(o.getClass());
             for (property in properties) {
                 String name = property.getName();
-                        if(!EXCLUDED.contains(name)) {
+                if(!EXCLUDED.contains(name)) {
                     def readMethod = property.getReadMethod();
                     if (readMethod != null) {
                         def value = readMethod.invoke(o, (Object[]) null);
-                        writer.key(name);
-                        json.convertAnother(value);
-                    }
+                        if (value instanceof List || value instanceof Set) {
+                            writer.key(name);
+                            writer.array()
+                            value.each { item ->
+                                if (ConverterUtil.isDomainClass(item.getClass())) {
+                                    json.convertAnother(item.id);
+                                } else {
+                                    json.convertAnother(item);
+                                }
+                            }
+                            writer.endArray()
+                        } else if (ConverterUtil.isDomainClass(value.getClass())) {
+                            writer.key(name);
+                            json.convertAnother(value.id);
+                        } else {
+                            writer.key(name);
+                            json.convertAnother(value);
                         }
+                    }
+                }
             }
             writer.endObject();
         } catch (Exception e) {

@@ -1,9 +1,10 @@
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.grails.plugins.rest.JSONApiRegistry
+import org.grails.plugins.rest.JsonRestApiPropertyEditorRegistrar
 
 class JsonRestApiGrailsPlugin {
     // the plugin version
-    def version = "1.0.5"
+    def version = "1.0.6"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "1.3.0 > *"
     // the other plugins this plugin depends on
@@ -28,7 +29,7 @@ This plugin provides effortless JSON API for GORM classes
     }
 
     def doWithSpring = {
-        // TODO Implement runtime spring config (optional)
+        jsonRestApiPropertyEditorRegistrar(JsonRestApiPropertyEditorRegistrar, ref("grailsApplication"))
     }
 
     def doWithDynamicMethods = { ctx ->
