@@ -39,7 +39,7 @@ class JsonRestApiController {
       obj.properties = request.JSON.data
       obj.validate()
       if (obj.hasErrors()) {
-        result.status = 500
+        status = 500
         result.message = extractErrors(obj).join(";")
         result.success = false
       } else {
