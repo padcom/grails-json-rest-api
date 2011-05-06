@@ -21,14 +21,19 @@ public class JSONDomainMarshaller implements ObjectMarshaller<JSON> {
         return ConverterUtil.isDomainClass(object.getClass());
     }
 
+    private getCustomApi(clazz) {
+        clazz.declaredFields.name.contains('api') ? clazz.api : null
+    }
+
     public void marshalObject(Object o, JSON json) throws ConverterException {
         JSONWriter writer = json.getWriter();
         try {
             writer.object();
             def properties = BeanUtils.getPropertyDescriptors(o.getClass());
+            def excludedFields = getCustomApi(o.class)?.excludedFields
             for (property in properties) {
                 String name = property.getName();
-                if(!EXCLUDED.contains(name)) {
+                if(!(EXCLUDED.contains(name) || excludedFields?.contains(name))) {
                     def readMethod = property.getReadMethod();
                     if (readMethod != null) {
                         def value = readMethod.invoke(o, (Object[]) null);
