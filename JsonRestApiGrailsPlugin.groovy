@@ -1,6 +1,7 @@
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.grails.plugins.rest.JSONApiRegistry
 import org.grails.plugins.rest.JsonRestApiPropertyEditorRegistrar
+import org.grails.plugins.rest.JsonDateEditorRegistrar
 
 class JsonRestApiGrailsPlugin {
     // the plugin version
@@ -30,6 +31,7 @@ This plugin provides effortless JSON API for GORM classes
 
     def doWithSpring = {
         jsonRestApiPropertyEditorRegistrar(JsonRestApiPropertyEditorRegistrar, ref("grailsApplication"))
+		customPropertyEditorRegistrar(JsonDateEditorRegistrar)
     }
 
     def doWithDynamicMethods = { ctx ->
