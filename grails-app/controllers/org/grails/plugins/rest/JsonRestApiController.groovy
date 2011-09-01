@@ -8,8 +8,8 @@ class JsonRestApiController {
   def list = {
     def result = [ success: true ]
     def entity = grailsApplication.getClassForName(params.entity)
-    def api = getCustomApi(entity)
     if (entity) {
+      def api = getCustomApi(entity)
       if (api?.list instanceof Closure)
         result.data = api.list(params)
       else
