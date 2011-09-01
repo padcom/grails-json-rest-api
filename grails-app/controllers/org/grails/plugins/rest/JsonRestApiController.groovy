@@ -63,6 +63,7 @@ class JsonRestApiController {
         data.result.message = extractErrors(data.result.data).join(";")
         data.result.success = false
       } else {
+	  	data.result.data = data.result.data.save(flush: true)
       }
     }
     render text: data.result as JSON, contentType: 'application/json', status: data.status
