@@ -44,7 +44,7 @@ This plugin provides effortless JSON API for GORM classes
     }
 
     def doWithApplicationContext = { applicationContext ->
-        grails.converters.JSON.registerObjectMarshaller(new org.grails.plugins.rest.JSONDomainMarshaller())
+        grails.converters.JSON.registerObjectMarshaller(new org.grails.plugins.rest.JSONDomainMarshaller(application))
     }
 
     def onChange = { event ->
