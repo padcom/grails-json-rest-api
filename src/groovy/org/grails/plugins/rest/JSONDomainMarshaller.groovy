@@ -7,6 +7,8 @@ package org.grails.plugins.rest
 //
 
 import grails.converters.JSON;
+import org.codehaus.groovy.grails.commons.GrailsApplication;
+import org.codehaus.groovy.grails.commons.DomainClassArtefactHandler;
 import org.codehaus.groovy.grails.web.converters.ConverterUtil;
 import org.codehaus.groovy.grails.web.converters.exceptions.ConverterException;
 import org.codehaus.groovy.grails.web.converters.marshaller.ObjectMarshaller;
@@ -17,8 +19,14 @@ public class JSONDomainMarshaller implements ObjectMarshaller<JSON> {
 
     static EXCLUDED = ['metaClass','class','version']
 
+    private GrailsApplication application
+    
+    public JSONDomainMarshaller(GrailsApplication application) {
+        this.application = application
+    }
+     
     public boolean supports(Object object) {
-        return ConverterUtil.isDomainClass(object.getClass());
+        return isDomainClass(object.getClass())
     }
 
     private getCustomApi(clazz) {
@@ -41,14 +49,14 @@ public class JSONDomainMarshaller implements ObjectMarshaller<JSON> {
                             writer.key(name);
                             writer.array()
                             value.each { item ->
-                                if (ConverterUtil.isDomainClass(item.getClass())) {
+                                if (isDomainClass(item.getClass())) {
                                     json.convertAnother(item.id);
                                 } else {
                                     json.convertAnother(item);
                                 }
                             }
                             writer.endArray()
-                        } else if (ConverterUtil.isDomainClass(value.getClass())) {
+                        } else if (isDomainClass(value.getClass())) {
                             writer.key(name);
                             json.convertAnother(value.id);
                         } else {
@@ -62,5 +70,10 @@ public class JSONDomainMarshaller implements ObjectMarshaller<JSON> {
         } catch (Exception e) {
             throw new ConverterException("Exception in JSONDomainMarshaller", e);
         }
+    }
+    
+    private boolean isDomainClass(Class clazz) {
+        String name = ConverterUtil.trimProxySuffix(clazz.getName());
+        return application.isArtefactOfType(DomainClassArtefactHandler.TYPE, name);
     }
 }
