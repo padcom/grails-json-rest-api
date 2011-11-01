@@ -71,8 +71,14 @@ class JsonRestApiController {
 
   def delete = {
     def data = retrieveRecord()
-    if (data.result.success) {
-      data.result.data.delete()
+    try {
+      if (data.result.success) {
+        data.result.data.delete(flush: true)
+      }
+    } catch (Exception e) {
+      data.result.success = false
+      data.result.message = e.message
+      data.result.status = 500
     }
     render text: data.result as JSON, contentType: 'application/json', status: data.status
   }
