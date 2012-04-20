@@ -22,12 +22,26 @@ class JsonRestApiController {
       result.success = false
       result.message = "Entity ${params.entity} not found"
     }
-    render text: result as JSON, contentType: 'application/json', status: result.success ? 200 : 500
+
+    String resp = result as JSON
+
+    if (params.callback) {
+        resp = params.callback + "(" + resp + ")"
+    }
+    render text: resp, contentType: 'application/json', status: result.success ? 200 : 500
+
+
   }
 
   def show = {
     def data = retrieveRecord()
-    render text: data.result as JSON, contentType: 'application/json', status: data.status
+
+    String resp = data.result as JSON
+
+    if (params.callback) {
+      resp = params.callback + "(" + resp + ")"
+    }
+    render text: resp, contentType: 'application/json', status: data.status
   }
   
   def create = {
@@ -50,7 +64,14 @@ class JsonRestApiController {
       result.message = "Entity ${params.entity} not found"
       status = 500
     }
-    render text: result as JSON, contentType: 'application/json', status: status
+
+    String resp = result as JSON
+
+    if (params.callback) {
+      resp = params.callback + "(" + resp + ")"
+    }
+
+    render text: resp, contentType: 'application/json', status: status
   }
   
   def update = {
@@ -66,7 +87,13 @@ class JsonRestApiController {
 	  	data.result.data = data.result.data.save(flush: true)
       }
     }
-    render text: data.result as JSON, contentType: 'application/json', status: data.status
+
+    String resp = data.result as JSON
+
+    if (params.callback) {
+      resp = params.callback + "(" + resp + ")"
+    }
+    render text: resp, contentType: 'application/json', status: data.status
   }
 
   def delete = {
@@ -80,7 +107,13 @@ class JsonRestApiController {
       data.result.message = e.message
       data.result.status = 500
     }
-    render text: data.result as JSON, contentType: 'application/json', status: data.status
+
+    String resp = data.result as JSON
+
+    if (params.callback) {
+      resp = params.callback + "(" + resp + ")"
+    }
+    render text: resp, contentType: 'application/json', status: data.status
   }
 
   private getCustomApi(clazz) {
