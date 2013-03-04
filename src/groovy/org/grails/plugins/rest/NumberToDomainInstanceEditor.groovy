@@ -11,7 +11,7 @@ public class NumberToDomainInstanceEditor extends PropertyEditorSupport {
 
     @Override
     public void setValue(Object value) {
-        if (value.class == domainClass)
+        if (domainClass.isAssignableFrom(value.class))
             super.setValue(value)
         else if (value instanceof Number) {
             def instance = domainClass.get(value)
