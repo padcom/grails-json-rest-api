@@ -37,12 +37,12 @@ class GenericRestFunctionalTests {
         def startCnt = clazz.count()
 
         clazz.build()
-        clazz.build()
-        clazz.build()
-        clazz.build()
+        //clazz.build()
+        //clazz.build()
+        //clazz.build()
 
         def cnt = clazz.count()
-        assertEquals startCnt+4, cnt
+        assertEquals startCnt+1, cnt
         
 
         // *** Send REST Request ***
@@ -167,12 +167,12 @@ class GenericRestFunctionalTests {
         def startCnt = clazz.count()
 
         clazz.build(args)
-        clazz.build()
-        clazz.build()
-        clazz.build()
+        //clazz.build()
+        //clazz.build()
+        //clazz.build()
         
         def allObjs = clazz.getAll()
-        assertTrue allObjs.size() == startCnt + 4
+        assertTrue allObjs.size() == startCnt + 1
 
         // Show first list element
         def show = allObjs[0]
@@ -236,10 +236,10 @@ class GenericRestFunctionalTests {
         def startCnt = clazz.count()
 
         clazz.build()
-        clazz.build()
+        //clazz.build()
 
         def allObjs = clazz.getAll()
-        assertTrue allObjs.size() == startCnt + 2
+        assertTrue allObjs.size() == startCnt + 1
 
         // Pull first list element for updating
         def show = allObjs[0]
@@ -312,10 +312,10 @@ class GenericRestFunctionalTests {
         def startCnt = clazz.count()
 
         clazz.build()
-        clazz.build()
+        //clazz.build()
 
         def allObjs = clazz.getAll()
-        assertTrue allObjs.size() == startCnt + 2
+        assertTrue allObjs.size() == startCnt + 1
 
         // Delete first list element
         def id = allObjs[0].id
