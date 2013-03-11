@@ -16,7 +16,7 @@ class JsonRestApiController {
   static def dataFieldsOnly
   static final String DEFAULT_ENTITY_ROOT = 'data'
   
-  
+      
   def list = {
     def result = [ success: true ]
     def entity = grailsApplication.getClassForName(params.entity)
@@ -79,6 +79,7 @@ class JsonRestApiController {
         result.success = false
       } else {
         result[entityRoot] = obj.save(flush: true)
+        log.debug("Returning saved object under root [${entityRoot}]: ${result[entityRoot]}")
       }
     } else {
       result.success = false
@@ -180,6 +181,9 @@ class JsonRestApiController {
   
   private String renderJSON (def obj, def params, String entityRoot=DEFAULT_ENTITY_ROOT, def renderAsList=false) {
       log.debug("Rendering domainClass as JSON under node '$entityRoot'")
+      if (obj?.success == false) {
+          log.debug("Result was error with message: ${obj.message}")
+      }
       JSONObject json = new JSONObject()
       resolveDataFieldsOnly(params)     // make sure we know what to include
       
