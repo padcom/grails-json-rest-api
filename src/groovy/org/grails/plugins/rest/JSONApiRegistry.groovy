@@ -17,9 +17,17 @@ class JSONApiRegistry {
         registry[name] = className
         // Register the plural, if not already
         registry[TextUtil.pluralize(name)] = className
+        // ISSUE: Ember by default pluralizes using only "s" - producing "person/persons" and "class/classs" - 
+        //    although the following operation will be redundant in most cases,
+        //    allow for wider compatibility by supporting both Ember style and others styled closer to English
+        //    i.e. the following will redundantly replace the previous "person/persons" registration, or in the 
+        //       case of "class/classes" it will register a second mapping "class/classs"
+        registry[TextUtil.emberPluralize(name)] = className
         // Keep track of plural->singular mapping, and singular->singular for convenience
         singulars[name] = name
         singulars[TextUtil.pluralize(name)] = name
+        // ISSUE: See pluralization ISSUE comment above
+        singulars[TextUtil.emberPluralize(name)] = name
     }
     
     static getEntity(def token) {

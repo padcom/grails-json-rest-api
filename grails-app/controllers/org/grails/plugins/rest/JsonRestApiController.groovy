@@ -15,6 +15,7 @@ class JsonRestApiController {
   static def useEntityRootName
   static def dataFieldsOnly
   static final String DEFAULT_ENTITY_ROOT = 'data'
+  static final String DATA_FIELDS_ONLY = 'dataFieldsOnly'
   
       
   def list = {
@@ -162,12 +163,12 @@ class JsonRestApiController {
   }
   
   private boolean resolveDataFieldsOnly(def params) {
-      if (params.containsKey('dataFieldsOnly')) {
+      if (params.containsKey(DATA_FIELDS_ONLY)) {
           // prefer URl overrides, mainly for testing
           dataFieldsOnly = new Boolean(params.dataFieldsOnly)
       }
       else if (dataFieldsOnly == null) {
-          dataFieldsOnly = resolveFromConfig('dataFieldsOnly')
+          dataFieldsOnly = resolveFromConfig(DATA_FIELDS_ONLY)
       }
       return dataFieldsOnly
   }
