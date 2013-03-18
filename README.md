@@ -7,9 +7,9 @@ Grails update.
 ### Support for the JSON REST dialect used by EmberJS
 
 Want to serve objects up to EmberJS?  It's default RESTAdapter is a little finicky. You will need to provide it with [something
-that looks like this](http://kentbutlercs.blogspot.hu/2013/02/emberjs-notes-and-gotchas.html)
+that looks like this](http://kentbutlercs.blogspot.hu/2013/02/emberjs-notes-and-gotchas.html).
 
-To accomplish this with the json-rest-api plugin, you need to set the following flags in your grails-app/conf/Config.groovy:
+To accomplish this with this fork of the json-rest-api plugin, you need to set the following flags in your grails-app/conf/Config.groovy:
 
         // Set to 'true' to package JSON objects inside a node named for the object
         //   Value of 'false' will use 'data' as the node name instead 
@@ -43,17 +43,20 @@ and with the flags disabled:
 
 Run the Plugin:
 
-* Install Grails 2.1
+* [Install Grails 2.1](http://grails.org/download)
 
 * Clone this project 
-     git clone https://github.com/kentbutler/grails-json-rest-api.git
 
-* Clone the sample TodoMVC app and run its functional tests. [See the 'Installing' section of the blog writeup](http://kentbutlercs.blogspot.hu/2013/03/emberjs-putting-rest-service-behind.html).
+       git clone https://github.com/kentbutler/grails-json-rest-api.git
+
+* Clone the sample TodoMVC app and run its functional tests. 
+
+    - [See the 'Installing' section of the blog writeup](http://kentbutlercs.blogspot.hu/2013/03/emberjs-putting-rest-service-behind.html).
 
 
-##### Implementation
+### Implementation
 
-This is accomplished with changes to:
+Changes to the base plugin are accomplished mainly changes to:
 
 * `JsonRestApiController.groovy`
     - change to support knowledge of the name of the entity when creating JSON
@@ -105,6 +108,7 @@ This plugin offers 2 different ways to render your objects from encoded JSON:
 * Grails Standard Approach 
     - uses `JSON.parse()` to produce a `JSONObject`
     - transformed into a domain class as    
+
         def myObj =  MyObj.class.newInstance()         
         myObj.properties = JSON.parse(inputString)
 
