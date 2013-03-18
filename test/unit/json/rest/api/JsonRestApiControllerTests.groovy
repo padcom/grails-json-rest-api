@@ -3,6 +3,7 @@ package json.rest.api
 import grails.converters.JSON
 import grails.test.mixin.*
 import grails.test.mixin.support.*
+import org.codehaus.groovy.grails.web.json.JSONObject
 
 import org.apache.commons.logging.LogFactory
 import org.grails.plugins.rest.JsonRestApiController
@@ -17,9 +18,12 @@ class JsonRestApiControllerTests {
     
     def controller
     def log = LogFactory.getLog(getClass())
+    def obj
     
     void setUp() {
         controller = new JsonRestApiController()
+        // By default we want to include the usual status parameters in generated output JSON
+        obj = [(JsonRestApiController.DATA_FIELDS_ONLY): false]
     }
 
     void tearDown() {
@@ -35,15 +39,26 @@ class JsonRestApiControllerTests {
         int id
         String firstName
         String lastName
+        
+        // Have the controller use this method for rendering JSON since
+        //   the Grails converter plugin will not be loaded for testing
+        JSONObject toJSON(def msgSource) {
+            def json = new JSONObject()
+            json.put("id", id)
+            json.put("firstName", firstName)
+            json.put("lastName", lastName)
+            return json
+        }
     }
+    
 
     void testRenderJsonNoData() {
         log.debug("------------ testRenderJsonNoData() -------------")
         assertNotNull controller
         
-        def obj = [success: false, message: 'Could not find record']
+        obj << [success: false, message: 'Could not find record']
         
-        def result = controller.renderJSON(obj)
+        def result = controller.renderJSON(obj, obj)
         assertNotNull result
         assertTrue "Result was instead: $result", result.indexOf("Could not find record") >= 0
         
@@ -60,9 +75,9 @@ class JsonRestApiControllerTests {
         assertNotNull controller
         
         def dc = new Person(id: 1, firstName:'Bob', lastName:'Bear')
-        def obj = [success: true, data: dc]
+        obj << [success: true, data: dc]
         
-        def result = controller.renderJSON(obj)
+        def result = controller.renderJSON(obj, obj)
         assertNotNull result
         assertTrue "Result was instead: $result", result.indexOf("Bear") > 0
         
@@ -85,9 +100,9 @@ class JsonRestApiControllerTests {
         assertNotNull controller
         
         def dc = new Person(id: 1, firstName:'Bob', lastName:'Bear')
-        def obj = [success: true, person: dc]
+        obj << [success: true, person: dc]
         
-        def result = controller.renderJSON(obj, 'person')
+        def result = controller.renderJSON(obj, obj, 'person')
         assertNotNull result
         assertTrue "Result was instead: $result", result.indexOf("Bear") > 0
         
@@ -109,9 +124,9 @@ class JsonRestApiControllerTests {
         log.debug("------------ testRenderJsonWithEmptyList() -------------")
         assertNotNull controller
         
-        def obj = [success: true, data: [], message:'No results found']
+        obj << [success: true, data: [], message:'No results found']
         
-        def result = controller.renderJSON(obj)
+        def result = controller.renderJSON(obj, obj)
         assertNotNull result
         assertTrue "Result was instead: $result", result.indexOf("No results found") >= 0
         
@@ -128,9 +143,9 @@ class JsonRestApiControllerTests {
         log.debug("------------ testRenderJsonWithEmptyListNoMessage() -------------")
         assertNotNull controller
         
-        def obj = [success: true, data: []]
+        obj << [success: true, data: []]
         
-        def result = controller.renderJSON(obj)
+        def result = controller.renderJSON(obj, obj)
         assertNotNull result
         assertTrue "Result was instead: $result", result.indexOf("No data available") >= 0
         
@@ -150,9 +165,9 @@ class JsonRestApiControllerTests {
         def dc2 = new Person(id: 2, firstName:'Frodo', lastName:'Baggins')
         def dc3 = new Person(id: 3, firstName:'Mrs.', lastName:'Baggins')
         
-        def obj = [success: true, data: [dc1,dc2,dc3]]
+        obj << [success: true, data: [dc1,dc2,dc3]]
         
-        def result = controller.renderJSON(obj, 'data', true)  // <-- note we render as a List
+        def result = controller.renderJSON(obj, obj, 'data', true)  // <-- note we render as a List
         assertNotNull result
         assertTrue result.indexOf("Baggins") > 0
         
@@ -182,9 +197,9 @@ class JsonRestApiControllerTests {
         def dc2 = new Person(id: 2, firstName:'Frodo', lastName:'Baggins')
         def dc3 = new Person(id: 3, firstName:'Mrs.', lastName:'Baggins')
         
-        def obj = [success: true, persons: [dc1,dc2,dc3]]
+        obj << [success: true, persons: [dc1,dc2,dc3]]
         
-        def result = controller.renderJSON(obj, 'persons', true)  // <-- note we render as a List
+        def result = controller.renderJSON(obj, obj, 'persons', true)  // <-- note we render as a List
         assertNotNull result
         assertTrue "Result contains unexpected data: $result", result.indexOf("count") > 0
         
