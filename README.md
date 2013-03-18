@@ -47,39 +47,20 @@ Run the Plugin:
 
 * Clone this project 
 
-       git clone https://github.com/kentbutler/grails-json-rest-api.git
+        git clone https://github.com/kentbutler/grails-json-rest-api.git
 
 * Clone the sample TodoMVC app and run its functional tests. 
 
     - [See the 'Installing' section of the blog writeup](http://kentbutlercs.blogspot.hu/2013/03/emberjs-putting-rest-service-behind.html).
 
 
-### Implementation
-
-Changes to the base plugin are accomplished mainly changes to:
-
-* `JsonRestApiController.groovy`
-    - change to support knowledge of the name of the entity when creating JSON
-
-* `JsonRestApiGrailsPlugin.groovy`
-    - change to register the domain class using both singular and plural forms of the domain class name
-    - necessary to support EmberJS requests using plural - [see this table](http://kentbutlercs.blogspot.hu/2013/02/emberjs-notes-and-gotchas.html)
-
-* added `org.grails.plugins.util.TextUtil`
-   - for pluralizing entity names
-
-* added `org.grails.plugins.test.GenericRestFunctionalTests`
-    - provides a way to test the REST interface apps which use this plugin offline
-    - sample use of this located [in this project](https://github.com/kentbutler/todomvc-grails-emberjs.git)
-
-
 ### Rendering JSON
 
-The branch adds another (optional) way to render the JSON for your domain classes. I did this because the Grails way wants to render the JSON immediately to a Writer, and I have often found cases where my domain class will get rolled into a larger JSON result, and/or I want to customize the rendering of the JSON to do things like i18n the text going out. I find it more flexible to produce a `JSONObject` from my domain class and let the user decide later when to actually render the JSON.
-
-Following is the writeup I imagined for the plugin front page.
+The branch adds an optional way to render the JSON for your domain classes. I did this because the Grails way wants to render the JSON immediately to a Writer, and I have often found cases where my domain class will get rolled into a larger JSON result, and/or I want to customize the rendering of the JSON to do things like i18n the text going out. I find it more flexible to produce a `JSONObject` from my domain class and let the user decide later when to actually render the JSON.
 
 ------------------------
+
+#### How it Works
 
 This plugin offers 3 different ways to render your domain classes into JSON:
 
@@ -99,25 +80,44 @@ See the ToDo domain class in the  [TodoMVC sample app](https://github.com/kentbu
 
 ### Unmarshalling from JSON
 
-I added an optional analagous `fromJSON()` method to the domain class for more flexibility in receiving data from the web client.  Here is my imagined writeup:
+I added an optional analagous `fromJSON()` method to the domain class for more flexibility in receiving and unpackaging data from the web client.  
 
 -------------------------------------
 
-This plugin offers 2 different ways to render your objects from encoded JSON:
+#### How it Works
+
+The plugin offers 2 different ways to render your objects from encoded JSON:
+
+* Add domain class method `void fromJSON(JSONObject)` - for more control over transforming input
 
 * Grails Standard Approach 
     - uses `JSON.parse()` to produce a `JSONObject`
     - transformed into a domain class as    
 
-        def myObj =  MyObj.class.newInstance()         
-        myObj.properties = JSON.parse(inputString)
-
-* Create method `void fromJSON(JSONObject)` in your domain class for more control over transforming input
+         def myObj =  MyObj.class.newInstance()         
+         myObj.properties = JSON.parse(inputString)
 
 
 See the generic functional test class in the [TodoMVC sample app](https://github.com/kentbutler/todomvc-grails-emberjs) for examples of usage.
 
 
+### Implementation
+
+Changes to the base plugin are mainly contained in:
+
+* `JsonRestApiController.groovy`
+    - change to support knowledge of the name of the entity when creating JSON
+
+* `JsonRestApiGrailsPlugin.groovy`
+    - change to register the domain class using both singular and plural forms of the domain class name
+    - necessary to support EmberJS requests using plural - [see this table](http://kentbutlercs.blogspot.hu/2013/02/emberjs-notes-and-gotchas.html)
+
+* added `org.grails.plugins.util.TextUtil`
+   - for pluralizing entity names
+
+* added `org.grails.plugins.test.GenericRestFunctionalTests`
+    - provides a way to test the REST interface apps which use this plugin offline
+    - sample use of this located [in this project](https://github.com/kentbutler/todomvc-grails-emberjs.git)
 
 
 ### Limitations
