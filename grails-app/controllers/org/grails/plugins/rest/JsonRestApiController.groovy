@@ -12,12 +12,14 @@ class JsonRestApiController {
   def log = LogFactory.getLog(getClass())
   def messageSource
   def grailsApplication
+  static def wrapResults
   static def useEntityRootName
   static def dataFieldsOnly
+  static final String WRAP_RESULTS = 'wrapResults'
   static final String DEFAULT_ENTITY_ROOT = 'data'
   static final String DATA_FIELDS_ONLY = 'dataFieldsOnly'
-  
-      
+
+
   def list = {
     def result = [ success: true ]
     def entity = grailsApplication.getClassForName(params.entity)
@@ -57,6 +59,7 @@ class JsonRestApiController {
     log.debug("*** Processing create() ***")
     def entity = grailsApplication.getClassForName(params.entity)
     def entityRoot = resolveEntityRoot(params)
+    def wrapped = resolveWrapResults(params) // if wrapped then expect incoming data wrapped also
     
     def result = [ success: true ]
     def status = 200
@@ -64,7 +67,7 @@ class JsonRestApiController {
     if (entity) {
       def obj = entity.newInstance()
       log.debug("Resolved entityRoot [$entityRoot] with JSON: ${request.JSON}")
-      def json = request.JSON?.opt(entityRoot)
+      def json = wrapped ? request.JSON?.opt(entityRoot) : request.JSON
       if (json) {
          log.debug("creating from $json")
          bindFromJSON(obj, json)
@@ -93,13 +96,15 @@ class JsonRestApiController {
   def update = {
     def entity = grailsApplication.getClassForName(params.entity)
     def entityRoot = resolveEntityRoot(params)
-      
+    def wrapped = resolveWrapResults(params) // if wrapped then expect incoming data wrapped also
+    
     def query = retrieveRecord(entity, entityRoot)
     def obj 
     if (query.result.success) {
       obj = query.result[entityRoot]
-      log.debug("update: query object: $obj")
-      def json = request.JSON?.opt(entityRoot)
+      log.debug("update: located object to update: $obj")
+      def json = wrapped ? request.JSON?.opt(entityRoot) : request.JSON
+      
       log.debug("update: binding input data: $json")
       if (json) {
          bindFromJSON(obj, json)
@@ -130,6 +135,7 @@ class JsonRestApiController {
       if (query.result.success) {
          log.debug("**** deleting entity: ${query.result[entityRoot].id} ****")
          query.result[entityRoot].delete(flush: true)
+         query.result[entityRoot] = null // To return an empty value in response
       }
     } catch (Exception e) {
       query.result.success = false
@@ -142,6 +148,18 @@ class JsonRestApiController {
   private getCustomApi(clazz) {
     clazz.declaredFields.name.contains('api') ? clazz.api : null
   }
+
+  private boolean resolveWrapResults(def params) {
+      if (params.containsKey(WRAP_RESULTS)) {
+          // prefer URl overrides, mainly for testing
+          wrapResults = new Boolean(params.wrapResults)
+      }
+      else if (wrapResults == null) {
+          wrapResults = resolveFromConfig(WRAP_RESULTS)
+      }
+      return wrapResults
+  }
+  
 
   private String resolveEntityRoot(def params, boolean multi=false) {
       def entityName = params?.domain
@@ -185,9 +203,10 @@ class JsonRestApiController {
       if (obj?.success == false) {
           log.debug("Result was error with message: ${obj.message}")
       }
-      JSONObject json = new JSONObject()
-      resolveDataFieldsOnly(params)     // make sure we know what to include
+      def json = new JSONObject()
       
+      resolveWrapResults(params)        // resolve return style for results
+      resolveDataFieldsOnly(params)     // make sure we know what to include
 
       if (!obj[entityRoot]) {
           log.debug("obj.$entityRoot is null, rendering as empty list")
@@ -241,20 +260,37 @@ class JsonRestApiController {
           }
       }
 
-       // Render full object without re-rendering domain class
-      if (!dataFieldsOnly) {
-           json.put("success",obj.success)
-           json.put("message",obj.message)
-      }
-      if (renderAsList) {
-          json.put(entityRoot, dcList)
+      if (wrapResults) {
+          // This output style allows for options of how to package results
+          
+          // Render full object without re-rendering domain class
           if (!dataFieldsOnly) {
-              json.put("count", dcList.size())
+               json.put("success",obj.success)
+               json.put("message",obj.message)
+          }
+          if (renderAsList) {
+              json.put(entityRoot, dcList)
+              if (!dataFieldsOnly) {
+                  json.put("count", dcList.size())
+              }
+          }
+          else if (dcList.size() > 0){
+              log.debug("Render single entity")
+              json.put(entityRoot, dcList.getJSONObject(0))
           }
       }
-      else if (dcList.size() > 0){
-          log.debug("Render single entity")
-          json.put(entityRoot, dcList.getJSONObject(0))
+      else {
+          // This output style allows for ONLY DATA
+          if (renderAsList) {
+              json = dcList
+          }
+          else if (dcList.size() > 0){
+              log.debug("Render single entity")
+              json = dcList.getJSONObject(0)
+          }
+          else {
+              log.warn("renderJSON has no single result to render for object: $obj")
+          }
       }
 
       def jsonStr = json.toString()

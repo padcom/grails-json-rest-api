@@ -19,11 +19,22 @@ class JsonRestApiControllerTests {
     def controller
     def log = LogFactory.getLog(getClass())
     def obj
+    def grailsApplication
     
     void setUp() {
+        grailsApplication = new org.codehaus.groovy.grails.commons.DefaultGrailsApplication()
+        
+        // Default config state
+        grailsApplication.config.grails.'json-rest-api'.wrapResults = true
+        grailsApplication.config.grails.'json-rest-api'.useEntityRootName = true
+        grailsApplication.config.grails.'json-rest-api'.dataFieldsOnly = false
+        
         controller = new JsonRestApiController()
+        controller.grailsApplication = grailsApplication
+        
         // By default we want to include the usual status parameters in generated output JSON
         obj = [(JsonRestApiController.DATA_FIELDS_ONLY): false]
+        
     }
 
     void tearDown() {
@@ -51,12 +62,23 @@ class JsonRestApiControllerTests {
         }
     }
     
+    void resetGlobals(def wrap, def useRoot, def dataFields) {
+        grailsApplication.config.grails.'json-rest-api'.wrapResults = wrap
+        grailsApplication.config.grails.'json-rest-api'.useEntityRootName = useRoot
+        grailsApplication.config.grails.'json-rest-api'.dataFieldsOnly = dataFields
+        controller.wrapResults = null
+        controller.useEntityRootName = null
+        controller.dataFieldsOnly = null
+    }
 
+    
     void testRenderJsonNoData() {
         log.debug("------------ testRenderJsonNoData() -------------")
         assertNotNull controller
         
         obj << [success: false, message: 'Could not find record']
+        
+        resetGlobals(true, true, false)
         
         def result = controller.renderJSON(obj, obj)
         assertNotNull result
@@ -70,9 +92,24 @@ class JsonRestApiControllerTests {
         assertEquals 'Could not find record', parsed.message 
     }
     
+    void testRenderJsonNoDataUnwrapped() {
+        log.debug("------------ testRenderJsonNoDataUnwrapped() -------------")
+        assertNotNull controller
+        
+        obj << [success: false, message: 'Could not find record']
+        
+        resetGlobals(false, true, false)
+        
+        def result = controller.renderJSON(obj, obj)
+        assertNotNull result
+        assertEquals  "{}", result
+    }
+    
+
     void testRenderJsonWithClass() {
         log.debug("------------ testRenderJsonWithClass() -------------")
         assertNotNull controller
+        resetGlobals(true, true, false)
         
         def dc = new Person(id: 1, firstName:'Bob', lastName:'Bear')
         obj << [success: true, data: dc]
@@ -95,9 +132,34 @@ class JsonRestApiControllerTests {
         assertEquals 'Bear', parsed.data.lastName
     }
     
+    void testRenderJsonWithClassUnwrapped() {
+        log.debug("------------ testRenderJsonWithClassUnwrapped() -------------")
+        assertNotNull controller
+        resetGlobals(false, true, false)
+        
+        def dc = new Person(id: 1, firstName:'Bob', lastName:'Bear')
+        obj << [success: true, data: dc]
+        
+        def result = controller.renderJSON(obj, obj)
+        assertNotNull result
+        assertTrue "Result was instead: $result", result.indexOf("Bear") > 0
+        
+        def parsed = JSON.parse(result)
+        assertNotNull parsed
+
+        assertNotNull parsed.id
+        assertEquals 1, parsed.id
+        assertNotNull parsed.firstName
+        assertEquals 'Bob', parsed.firstName
+        assertNotNull parsed.lastName
+        assertEquals 'Bear', parsed.lastName
+    }
+    
+
     void testRenderJsonWithClassEntityRoot() {
         log.debug("------------ testRenderJsonWithClassEntityRoot() -------------")
         assertNotNull controller
+        resetGlobals(true, true, false)
         
         def dc = new Person(id: 1, firstName:'Bob', lastName:'Bear')
         obj << [success: true, person: dc]
@@ -123,6 +185,7 @@ class JsonRestApiControllerTests {
     void testRenderJsonWithEmptyList() {
         log.debug("------------ testRenderJsonWithEmptyList() -------------")
         assertNotNull controller
+        resetGlobals(true, true, false)
         
         obj << [success: true, data: [], message:'No results found']
         
@@ -139,9 +202,27 @@ class JsonRestApiControllerTests {
 
     }
 
+    void testRenderJsonWithEmptyListUnwrapped() {
+        log.debug("------------ testRenderJsonWithEmptyListUnwrapped() -------------")
+        assertNotNull controller
+        resetGlobals(false, true, false)
+        
+        obj << [success: true, data: [], message:'No results found']
+        
+        def result = controller.renderJSON(obj, obj)
+        assertNotNull result
+        log.debug("Result was: $result")
+        assertEquals result, "{}"
+        
+        def parsed = JSON.parse(result)
+        assertNotNull parsed
+
+    }
+
     void testRenderJsonWithEmptyListNoMessage() {
         log.debug("------------ testRenderJsonWithEmptyListNoMessage() -------------")
         assertNotNull controller
+        resetGlobals(true, true, false)
         
         obj << [success: true, data: []]
         
@@ -160,6 +241,7 @@ class JsonRestApiControllerTests {
     void testRenderJsonWithDataList() {
         log.debug("------------ testRenderJsonWithDataList() -------------")
         assertNotNull controller
+        resetGlobals(true, true, false)
         
         def dc1 = new Person(id: 1, firstName:'Bilbo', lastName:'Baggins')
         def dc2 = new Person(id: 2, firstName:'Frodo', lastName:'Baggins')
@@ -189,9 +271,38 @@ class JsonRestApiControllerTests {
         assertEquals 'Baggins', parsed.data[0].lastName
     }
     
+    void testRenderJsonWithDataListUnwrapped() {
+        log.debug("------------ testRenderJsonWithDataListUnwrapped() -------------")
+        assertNotNull controller
+        resetGlobals(false, true, false)
+        
+        def dc1 = new Person(id: 1, firstName:'Bilbo', lastName:'Baggins')
+        def dc2 = new Person(id: 2, firstName:'Frodo', lastName:'Baggins')
+        def dc3 = new Person(id: 3, firstName:'Mrs.', lastName:'Baggins')
+        
+        obj << [success: true, data: [dc1,dc2,dc3]]
+        
+        def result = controller.renderJSON(obj, obj, 'data', true)  // <-- note we render as a List
+        assertNotNull result
+        assertTrue result.indexOf("Baggins") > 0
+        
+        def parsed = JSON.parse(result)
+        assertNotNull parsed
+        
+        assertNotNull "data not found in $result", parsed
+        assertNotNull "array field not found in $result", parsed[0]
+        assertNotNull parsed[0].id
+        assertEquals 1, parsed[0].id 
+        assertNotNull parsed[0].firstName
+        assertEquals 'Bilbo', parsed[0].firstName 
+        assertNotNull parsed[0].lastName
+        assertEquals 'Baggins', parsed[0].lastName
+    }
+    
     void testRenderJsonWithDataListEntityRoot() {
         log.debug("------------ testRenderJsonWithDataListEntityRoot() -------------")
         assertNotNull controller
+        resetGlobals(true, true, false)
         
         def dc1 = new Person(id: 1, firstName:'Bilbo', lastName:'Baggins')
         def dc2 = new Person(id: 2, firstName:'Frodo', lastName:'Baggins')
