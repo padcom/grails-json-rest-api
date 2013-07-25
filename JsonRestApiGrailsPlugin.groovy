@@ -38,7 +38,8 @@ This plugin provides effortless JSON API for GORM classes
         application.domainClasses.each { domainClass ->
             def resource = domainClass.getStaticPropertyValue('expose', String)
             if (resource) {
-                JSONApiRegistry.registry[resource] = domainClass.fullName
+                println "Registering domain class: ${domainClass.fullName} exposed as ${resource} and its plural"
+                JSONApiRegistry.register(resource, domainClass.fullName)
             }
         }
     }

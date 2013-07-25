@@ -28,3 +28,26 @@ log4j = {
 //
 // grails.'json-rest-api'.root = '/json'
 //
+grails.views.default.codec="none" // none, html, base64
+grails.views.gsp.encoding="UTF-8"
+
+environments {
+    test {
+        grails.logging.jul.usebridge = false
+        log4j = {
+            appenders {
+                rollingFile name:"plugin", maxFileSize:"10000KB", maxBackupIndex:10, file:"logs/json-rest-api.log",layout:pattern(conversionPattern: '%d{yyyy-MM-dd HH:mm:ss,SSS z} [%t] %-5p[%c]: %m%n')
+                console name:'stacktrace'  // to get stacktraces out to the console
+            }
+            
+            debug 'json.rest.api','grails.app','org.grails.plugins.rest',additivity = true
+            warn  'org.codehaus.groovy','org.grails.plugin','grails.spring','net.sf.ehcache','grails.plugin',
+                  'org.apache','com.gargoylesoftware.htmlunit','org.codehaus.groovy.grails.orm.hibernate','org.hibernate'
+            
+            root {
+                debug 'plugin','stacktrace' 
+                additivity = true
+            }
+        }
+    }
+}

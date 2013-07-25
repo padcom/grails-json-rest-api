@@ -6,3 +6,4 @@ target
 plugin.xml
 *.zip
 jrebel.lic
+logs
