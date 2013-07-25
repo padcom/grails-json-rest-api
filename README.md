@@ -23,6 +23,14 @@ To accomplish this with this fork of the json-rest-api plugin, you need to set t
         //   Enable this for EmberJS
         grails.'json-rest-api'.dataFieldsOnly = true
 
+        // Set to 'true' to wrap JSON results in a top level of meta-data including 'success'/[true/false]
+        //   and 'message' fields.  Data is placed at this top level under the node specified by the
+        //   'useEntityRootName' flag.
+        //   Value of 'false' will render only data.
+        //   Default value is false
+        //   Disable this for EmberJS
+        grails.'json-rest-api'.wrapResults = false
+
 For example, for the 'show' action this will produce output like:
 
         {"todo":{"id":1,"title":"eat","completed":false}}
@@ -49,14 +57,38 @@ Run the Plugin:
 
         git clone https://github.com/kentbutler/grails-json-rest-api.git
 
-* Clone the sample TodoMVC app and run its functional tests. 
+* Run the project's built-in test cases
+
+        grails test-app -functional
+
+  and observe the output to see how the REST interface behaves.
+
+* Add to your Grails project - add the following to grails-app/conf/BuildConfig.groovy  (one possible way)
+ 
+         // Adding Plugin-in:  grails-json-rest
+         grails.plugin.location.jsonrest = "../grails-json-rest-api"
+
+
+### Examples
+
+* See the sample TodoMVC app and run its functional tests. 
 
     - [See the 'Installing' section of the blog writeup](http://kentbutlercs.blogspot.hu/2013/03/emberjs-putting-rest-service-behind.html).
+
+  see the tests defined in test driver
+
+           todomvc-grails-emberjs/test/functional/todo/TodoFunctionalTests.groovy
+
+  and domain class JSON methods.
+
+  - copy/modify for your own domain object. Test with
+
+        grails test-app -functional
 
 
 ### Rendering JSON
 
-The branch adds an optional way to render the JSON for your domain classes. I did this because the Grails way wants to render the JSON immediately to a Writer, and I have often found cases where my domain class will get rolled into a larger JSON result, and/or I want to customize the rendering of the JSON to do things like i18n the text going out. I find it more flexible to produce a `JSONObject` from my domain class and let the user decide later when to actually render the JSON.
+The branch adds an optional way to render the JSON for your domain classes. I did this because the Grails way wants to render the JSON immediately to a Writer, and I have often found cases where my domain class will get rolled into a larger JSON result, and/or I want to customize the rendering of the JSON to do things like i18n the text going out. I find it more flexible to produce a `JSONObject` from my domain class and let the user decide later when to actually render the JSON. Also in an OO perspective it makes more sense to place the rendering of the object within its class definition.
 
 ------------------------
 
@@ -96,7 +128,6 @@ The plugin offers 2 different ways to render your objects from encoded JSON:
 
          def myObj =  MyObj.class.newInstance()         
          myObj.properties = JSON.parse(inputString)
-
 
 See the generic functional test class in the [TodoMVC sample app](https://github.com/kentbutler/todomvc-grails-emberjs) for examples of usage.
 

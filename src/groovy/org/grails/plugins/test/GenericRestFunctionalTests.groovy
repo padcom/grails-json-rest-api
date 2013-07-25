@@ -4,6 +4,7 @@ import grails.converters.JSON
 
 import org.apache.commons.logging.LogFactory
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
+import org.codehaus.groovy.grails.web.json.JSONArray
 
 
 /**
@@ -55,8 +56,10 @@ class GenericRestFunctionalTests {
         this.doGenericTestList (obj, false, false)
         // Extra capabilities mode
         this.doGenericTestList (obj, true, true)
+        // Unwrapped mode - no top-level node
+        this.doGenericTestList (obj, true, true, false)
     }
-    private def doGenericTestList = { def obj, def useEntityRootName, def dataFieldsOnly ->
+    private def doGenericTestList = { def obj, def useEntityRootName, def dataFieldsOnly, def wrapResults = true ->
         assertNotNull obj
         assertNotNull obj.class
         assertNull "Identifier found; given object must not be persisted", obj.id
@@ -64,7 +67,7 @@ class GenericRestFunctionalTests {
         def clazz = obj.class
         def cname = clazz.expose
         def dataNode = useEntityRootName ? cname : 'data'
-        log.debug("------- ${cname}.testList() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields] ---------")
+        log.debug("------- ${cname}.testList() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields] [${wrapResults?'wrapped':'unwrapped'}]---------")
         
         
         // Construct as a cheap clone so we can re-use this object
@@ -81,7 +84,7 @@ class GenericRestFunctionalTests {
         recs.each { log.debug it }
                 
         // *** Send REST Request ***
-        get("/api/$cname?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}")
+        get("/api/$cname?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}&wrapResults=${wrapResults}")
         assertStatus 200
 
         // *** Examine Result ***
@@ -91,11 +94,16 @@ class GenericRestFunctionalTests {
         def map = JSON.parse(model)
         log.debug("Parsed response into map: " + map)
         
-        def resultObj = map[dataNode][0]
+        
+        def resultObj = wrapResults ? map[dataNode][0] : map[0]
         assertNotNull("returned data has no id", resultObj?.id)
         
         
-        if (dataFieldsOnly) {
+        if (!wrapResults) {
+            // Result will be a JSONArray
+            assertTrue "result array is empty", map.length() > 0
+        }
+        else if (dataFieldsOnly) {
             assertFalse "result contains success flag", map.containsKey('success')
         }
         else {
@@ -103,7 +111,10 @@ class GenericRestFunctionalTests {
             assertEquals "count field incorrect", startCnt, map.count
         }
         
-        if (useEntityRootName) {
+        if (!wrapResults) {
+            assertTrue "result is not a JSONArray", map instanceof JSONArray
+        }
+        else if (useEntityRootName) {
             assertFalse "result contains data param", map.containsKey('data')
             assertNotNull "result does not contain entityName param", map[cname]
         }
@@ -140,8 +151,10 @@ class GenericRestFunctionalTests {
         this.doGenericTestCreate (obj, false, false)
         // Extra capabilities mode
         this.doGenericTestCreate (obj, true, true)
+        // Unwrapped mode - no top-level node
+        this.doGenericTestList (obj, true, true, false)
     }
-    def doGenericTestCreate = { def obj, def useEntityRootName, def dataFieldsOnly ->        
+    def doGenericTestCreate = { def obj, def useEntityRootName, def dataFieldsOnly, def wrapResults = true ->        
         assertNotNull obj
         assertNotNull obj.class
         assertNull "Identifier found; given object must not be persisted", obj.id
@@ -149,16 +162,22 @@ class GenericRestFunctionalTests {
         def cname = obj.class.expose
         def dataNode = useEntityRootName ? cname : 'data'
                 
-        log.debug("------- ${cname}.testCreate() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields] ---------")
+        log.debug("------- ${cname}.testCreate() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields] [${wrapResults?'wrapped':'unwrapped'}]---------")
         
         def supportsToJson = obj?.respondsTo('toJSON')
-        def json = (supportsToJson ? [(dataNode) : obj?.toJSON(messageSource)] as JSON : [(dataNode) : obj] as JSON )
+        def json
+        if (wrapResults) {
+            json = (supportsToJson ? [(dataNode) : obj?.toJSON(messageSource)] as JSON : [(dataNode) : obj] as JSON )
+        }
+        else {
+            json = (supportsToJson ? obj?.toJSON(messageSource) : [ obj ] as JSON )
+        }
         
         log.debug("Creating with JSON: " + json)
         
         // *** Send REST Request ***
-        post("/api/${cname}?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}") {
-        headers['Content-type'] = 'application/json'
+        post("/api/${cname}?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}&wrapResults=${wrapResults}") {
+            headers['Content-type'] = 'application/json'
             body { json }
         }
         assertStatus 200
@@ -171,18 +190,25 @@ class GenericRestFunctionalTests {
         log.debug("Parsed response into map: " + map)
         
         // Newly created object
-        def newObj = map[dataNode]
+        def newObj = wrapResults ? map[dataNode] : map
         
         assertNotNull newObj.id
                 
-        if (dataFieldsOnly) {
+        if (!wrapResults) {
+            // Result will be a JSONArray
+            assertTrue "result array is empty", map.length() > 0
+        }
+        else if (dataFieldsOnly) {
             assertFalse "result contains success flag", map.containsKey('success')
         }
         else {
             assertEquals "success flag", true, map['success']
         }
         
-        if (useEntityRootName) {
+        if (!wrapResults) {
+            assertTrue "result is not a JSONArray", map instanceof JSONArray
+        }
+        else if (useEntityRootName) {
             assertFalse "result contains data param", map.containsKey('data')
             assertNotNull "result does not contain entityName param", map[cname]
         }
@@ -211,8 +237,10 @@ class GenericRestFunctionalTests {
         this.doGenericTestShow (obj, false, false)
         // Extra capabilities mode
         this.doGenericTestShow (obj, true, true)
+        // Unwrapped mode - no top-level node
+        this.doGenericTestList (obj, true, true, false)
     }
-    def doGenericTestShow = { def obj, def useEntityRootName, def dataFieldsOnly ->
+    def doGenericTestShow = { def obj, def useEntityRootName, def dataFieldsOnly, def wrapResults = true ->
         assertNotNull obj
         assertNotNull obj.class
         assertNull "Identifier found; given object must not be persisted", obj.id
@@ -221,7 +249,7 @@ class GenericRestFunctionalTests {
         def cname = obj.class.expose
         def dataNode = useEntityRootName ? cname : 'data'
         
-        log.debug("------- ${cname}.testShow() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields] ---------")
+        log.debug("------- ${cname}.testShow() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields] [${wrapResults?'wrapped':'unwrapped'}]---------")
         
         // Construct as a cheap clone so we can re-use this object
         def newObj = cloneObject(obj)
@@ -231,7 +259,7 @@ class GenericRestFunctionalTests {
         
         // *** Send REST Request ***
         //   Note: wanted to use closure mode of passing args but was getting an ArrayIndexOutOfBoundsException - didn't figure out why
-        get("/api/$cname/${newObj.id}?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}") 
+        get("/api/$cname/${newObj.id}?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}&wrapResults=${wrapResults}") 
         assertStatus 200
  
         // *** Examine Result ***
@@ -242,20 +270,27 @@ class GenericRestFunctionalTests {
         log.debug("Parsed response into map: " + map)
 
         // Our entry should be one and only
-        def id = map[dataNode]['id']
+        def id = wrapResults ? map[dataNode]['id'] : map['id']
 
         assertNotNull(id)
         assertEquals "Result id is not the same id", newObj.id, id 
         
         
-        if (dataFieldsOnly) {
+        if (!wrapResults) {
+            // Result will be a JSONArray
+            assertTrue "result array is empty", map.length() > 0
+        }
+        else if (dataFieldsOnly) {
             assertFalse "result contains success flag", map.containsKey('success')
         }
         else {
             assertEquals "success flag", true, map['success']
         }
         
-        if (useEntityRootName) {
+        if (!wrapResults) {
+            assertTrue "result is not a JSONArray", map instanceof JSONArray
+        }
+        else if (useEntityRootName) {
             assertFalse "result contains data param", map.containsKey('data')
             assertNotNull "result does not contain entityName param", map[cname]
         }
@@ -295,7 +330,7 @@ class GenericRestFunctionalTests {
         // Extra capabilities mode
         this.doGenericTestUpdate (obj, args, true, true)
     }
-    def doGenericTestUpdate = { def obj, def args, def useEntityRootName, def dataFieldsOnly ->
+    def doGenericTestUpdate = { def obj, def args, def useEntityRootName, def dataFieldsOnly, def wrapResults = true ->
         assertNotNull obj
         assertNotNull obj.class
         assertNotNull args
@@ -305,7 +340,7 @@ class GenericRestFunctionalTests {
         def cname = clazz.expose
         def dataNode = useEntityRootName ? cname : 'data'
         
-        log.debug("------- ${cname}.testUpdate() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields] ---------")
+        log.debug("------- ${cname}.testUpdate() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields]  [${wrapResults?'wrapped':'unwrapped'}]---------")
 
         def startCnt = clazz.count()
         
@@ -332,7 +367,7 @@ class GenericRestFunctionalTests {
         log.debug("Updating with JSON: " + json)
         
         // *** Send REST Request ***
-        put("/api/$cname/${newObj.id}?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}") {
+        put("/api/$cname/${newObj.id}?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}&wrapResults=${wrapResults}") {
             headers['Content-type'] = 'application/json'
             body { json }
         }
@@ -353,6 +388,7 @@ class GenericRestFunctionalTests {
             assertEquals args[entry.key], resultObj[entry.key]
         }
         
+        /*
         if (dataFieldsOnly) {
             assertFalse "result contains success flag", map.containsKey('success')
         }
@@ -368,6 +404,32 @@ class GenericRestFunctionalTests {
             assertFalse "result contains entityName param", map.containsKey(cname)
             assertNotNull "result does not contain data", map.data
         }
+        */
+        //-------------------------------------------------------------------
+        
+        if (!wrapResults) {
+            // Result will be a JSONArray
+            assertTrue "result array is empty", map.length() > 0
+        }
+        else if (dataFieldsOnly) {
+            assertFalse "result contains success flag", map.containsKey('success')
+        }
+        else {
+            assertEquals "success flag", true, map['success']
+        }
+        
+        if (!wrapResults) {
+            assertTrue "result is not a JSONArray", map instanceof JSONArray
+        }
+        else if (useEntityRootName) {
+            assertFalse "result contains data param", map.containsKey('data')
+            assertNotNull "result does not contain entityName param", map[cname]
+        }
+        else {
+            assertFalse "result contains entityName param", map.containsKey(cname)
+            assertNotNull "result does not contain data", map.data
+        }
+
         
         // Remove created record so this method is runnable again
         clazz.withSession { session ->
@@ -394,8 +456,10 @@ class GenericRestFunctionalTests {
         this.doGenericTestDelete (obj, false, false)
         // Extra capabilities mode
         this.doGenericTestDelete (obj, true, true)
+        // Unwrapped mode - no top-level node
+        this.doGenericTestDelete (obj, true, true, false)
     }
-    def doGenericTestDelete = { def obj, def useEntityRootName, def dataFieldsOnly ->
+    def doGenericTestDelete = { def obj, def useEntityRootName, def dataFieldsOnly, def wrapResults = true ->
         assertNotNull obj
         assertNotNull obj.class
         assertNull "Identifier found; given object must not be persisted", obj.id
@@ -403,7 +467,7 @@ class GenericRestFunctionalTests {
         def clazz = obj.class
         def cname = clazz.expose
         assertNotNull "Class is not exposed for plugin", cname
-        log.debug("------- ${cname}.testDelete() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields] ---------")
+        log.debug("------- ${cname}.testDelete() ---- [${useEntityRootName?'entityName node':'data node'}] [${dataFieldsOnly?'no ':''}status fields]  [${wrapResults?'wrapped':'unwrapped'}]---------")
 
         // Construct as a cheap clone so we can re-use this object
         def newObj = cloneObject(obj)
@@ -420,7 +484,7 @@ class GenericRestFunctionalTests {
         assertNotNull "id of object to delete is null", id
         
         // *** Send REST Request ***
-        delete("/api/${cname}/${id}?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}")
+        delete("/api/${cname}/${id}?useEntityRootName=${useEntityRootName}&dataFieldsOnly=${dataFieldsOnly}&wrapResults=${wrapResults}")
         assertStatus 200
 
         // *** Examine Result ***
@@ -432,24 +496,19 @@ class GenericRestFunctionalTests {
 
         // Verify Result
         assertFalse "record still exists", clazz.exists(id)
-        
-        if (dataFieldsOnly) {
+
+                    
+        if (!wrapResults) {
+            // Result will be a JSONArray
+            assertTrue "result array is not empty", map.length() == 0
+        }
+        else if (dataFieldsOnly) {
             assertFalse "result contains success flag", map.containsKey('success')
         }
         else {
             assertEquals "success flag", true, map['success']
         }
-        // In the delete case, there should be no returned data .. CHECK that this is compliant with original grails-json-rest-api
-/*
-        if (useEntityRootName) {
-            assertFalse "result contains data param", map.containsKey('data')
-            assertNotNull "result does not contain entityName param", map[cname]
-        }
-        else {
-            assertFalse "result contains entityName param", map.containsKey(cname)
-            assertNotNull "result does not contain data", map.data
-        }
-*/
+        
     }
 
     

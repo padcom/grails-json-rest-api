@@ -52,6 +52,11 @@ class JsonRestApiController {
       def entity = grailsApplication.getClassForName(params.entity)
       def entityRoot = resolveEntityRoot(params)
       def query = retrieveRecord(entity, entityRoot)
+      if (query.result[entityRoot]) {
+          def o = query.result[entityRoot]
+          log.debug("returned result is type: ${o.class.name}")
+      } else { log.debug("no query result #####") }
+      
       render text: renderJSON(query.result, params, entityRoot), contentType: 'application/json', status: query.status
   }
   
